@@ -44,6 +44,12 @@ function toggleHabit(id) {
   render();
 }
 
+function renameHabit(id, value) {
+  const h = habits.find(h => h.id === id);
+  h.name = value;
+  save();
+}
+
 function archiveHabit(id) {
   habits.find(h => h.id === id).archived = true;
   save();
@@ -62,7 +68,7 @@ function deleteHabit(id) {
 function getStreak(h) {
   let streak = 0;
   let d = new Date(today);
-  while (h.history[d.toISOString().slice(0,10)]) {
+  while (h.history[d.toISOString().slice(0, 10)]) {
     streak++;
     d.setDate(d.getDate() - 1);
   }
@@ -105,7 +111,7 @@ function renderToday(app) {
 
   habits
     .filter(h => !h.archived)
-    .sort((a,b) => a.order - b.order)
+    .sort((a, b) => a.order - b.order)
     .forEach(h => {
       const done = h.history[todayKey];
       const streak = getStreak(h);
@@ -118,12 +124,27 @@ function renderToday(app) {
 
       card.innerHTML = `
         <div class="habit-top">
-          <div class="habit-name">${h.name}</div>
-          <div class="archive" onclick="event.stopPropagation(); archiveHabit('${h.id}')">archive</div>
+          <input
+            class="habit-name"
+            value="${h.name}"
+            onclick="event.stopPropagation()"
+            oninput="renameHabit('${h.id}', this.value)"
+          />
+          <div
+            class="archive"
+            onclick="event.stopPropagation(); archiveHabit('${h.id}')"
+          >
+            archive
+          </div>
         </div>
+
         <div class="streak">🔥 ${streak}</div>
+
         <div class="progress">
-          <div class="progress-fill" style="width:${done ? 100 : 0}%; background:var(--green)"></div>
+          <div
+            class="progress-fill"
+            style="width:${done ? 100 : 0}%; background:var(--green)"
+          ></div>
         </div>
       `;
 
@@ -134,6 +155,7 @@ function renderToday(app) {
   add.className = "add-btn";
   add.innerText = "+ Add Habit";
   add.onclick = addHabit;
+
   app.appendChild(add);
 }
 
@@ -148,15 +170,16 @@ function renderWeek(app) {
 
   grid.innerHTML =
     "<div></div>" +
-    ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-      .map(d => `<div class="cell">${d}</div>`).join("");
+    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      .map(d => `<div class="cell">${d}</div>`)
+      .join("");
 
   habits.filter(h => !h.archived).forEach(h => {
     grid.innerHTML += `<div>${h.name}</div>`;
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      const key = d.toISOString().slice(0,10);
+      const key = d.toISOString().slice(0, 10);
       grid.innerHTML += `<div class="dot ${h.history[key] ? "done" : ""}"></div>`;
     }
   });
@@ -181,7 +204,7 @@ function renderMonth(app) {
   }
 
   for (let d = 1; d <= days; d++) {
-    const key = new Date(y, m, d).toISOString().slice(0,10);
+    const key = new Date(y, m, d).toISOString().slice(0, 10);
     const active = habits.filter(h => !h.archived);
     const done = active.filter(h => h.history[key]).length;
     const pct = active.length ? (done / active.length) * 100 : 0;
