@@ -158,6 +158,12 @@ function handleDragOver(container, e) {
 function renderToday(app) {
   const pct = overallCompletion();
   const bar = document.getElementById("overallBar");
+const add = document.createElement("button");
+add.className = "add-btn";
+add.innerText = "+ Add Habit";
+add.onclick = addHabit;
+
+app.appendChild(add); // outside container for drag/drop
 
   bar.style.width = pct + "%";
   bar.style.background = barColor(pct);
