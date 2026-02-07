@@ -6,6 +6,8 @@ document.getElementById("date").innerText = today.toDateString();
 
 let habits = JSON.parse(localStorage.getItem("habits")) || [];
 
+/* ---------- UTILS ---------- */
+
 function save() {
   localStorage.setItem("habits", JSON.stringify(habits));
 }
@@ -13,6 +15,12 @@ function save() {
 function setView(v) {
   view = v;
   render();
+}
+
+function barColor(pct) {
+  if (pct >= 75) return "var(--green)";
+  if (pct >= 50) return "var(--yellow)";
+  return "var(--red)";
 }
 
 /* ---------- HABITS ---------- */
@@ -36,11 +44,6 @@ function toggleHabit(id) {
   render();
 }
 
-function renameHabit(id, value) {
-  habits.find(h => h.id === id).name = value;
-  save();
-}
-
 function archiveHabit(id) {
   habits.find(h => h.id === id).archived = true;
   save();
@@ -48,7 +51,7 @@ function archiveHabit(id) {
 }
 
 function deleteHabit(id) {
-  if (!confirm("Delete this habit permanently?")) return;
+  if (!confirm("Delete this habit?")) return;
   habits = habits.filter(h => h.id !== id);
   save();
   render();
@@ -56,11 +59,10 @@ function deleteHabit(id) {
 
 /* ---------- STREAK ---------- */
 
-function getStreak(habit) {
+function getStreak(h) {
   let streak = 0;
   let d = new Date(today);
-
-  while (habit.history[d.toISOString().slice(0, 10)]) {
+  while (h.history[d.toISOString().slice(0,10)]) {
     streak++;
     d.setDate(d.getDate() - 1);
   }
@@ -72,94 +74,70 @@ function getStreak(habit) {
 function overallCompletion() {
   const active = habits.filter(h => !h.archived);
   if (!active.length) return 0;
-
   const done = active.filter(h => h.history[todayKey]).length;
   return Math.round((done / active.length) * 100);
 }
 
-function barColor(pct) {
-  if (pct >= 75) return "var(--green)";
-  if (pct >= 50) return "var(--yellow)";
-  return "var(--red)";
+/* ---------- SWIPE ---------- */
+
+function addSwipe(el, habit) {
+  let startX = 0;
+
+  el.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+  });
+
+  el.addEventListener("touchend", e => {
+    const diff = e.changedTouches[0].clientX - startX;
+    if (diff > 80) toggleHabit(habit.id);
+    if (diff < -80) deleteHabit(habit.id);
+  });
 }
 
-/* ---------- RENDER TODAY ---------- */
+/* ---------- TODAY ---------- */
 
 function renderToday(app) {
-  const percent = overallCompletion();
+  const pct = overallCompletion();
   const bar = document.getElementById("overallBar");
 
-  bar.style.width = percent + "%";
-  bar.style.background = barColor(percent);
+  bar.style.width = pct + "%";
+  bar.style.background = barColor(pct);
 
   habits
     .filter(h => !h.archived)
-    .sort((a, b) => a.order - b.order)
-    .forEach(habit => {
-      const done = habit.history[todayKey];
-      const streak = getStreak(habit);
+    .sort((a,b) => a.order - b.order)
+    .forEach(h => {
+      const done = h.history[todayKey];
+      const streak = getStreak(h);
 
       const card = document.createElement("div");
       card.className = "habit" + (done ? " done" : "");
-      card.draggable = true;
+      card.onclick = () => toggleHabit(h.id);
 
-      card.ondragstart = e => e.dataTransfer.setData("id", habit.id);
-      card.ondragover = e => e.preventDefault();
-      card.ondrop = e => reorder(e, habit.id);
-
-      card.onclick = () => toggleHabit(habit.id);
+      addSwipe(card, h);
 
       card.innerHTML = `
-        <div class="habit-header">
-          <input
-            value="${habit.name}"
-            onclick="event.stopPropagation()"
-            oninput="renameHabit('${habit.id}', this.value)"
-          >
-          <div class="streak">🔥 ${streak}</div>
+        <div class="habit-top">
+          <div class="habit-name">${h.name}</div>
+          <div class="archive" onclick="event.stopPropagation(); archiveHabit('${h.id}')">archive</div>
         </div>
-
+        <div class="streak">🔥 ${streak}</div>
         <div class="progress">
-          <div class="progress-fill" 
-               style="width:${done ? 100 : 0}%; background:var(--green)">
-          </div>
-        </div>
-
-        <div class="actions">
-          <span onclick="event.stopPropagation(); archiveHabit('${habit.id}')">Archive</span>
-          <span onclick="event.stopPropagation(); deleteHabit('${habit.id}')">Delete</span>
+          <div class="progress-fill" style="width:${done ? 100 : 0}%; background:var(--green)"></div>
         </div>
       `;
 
       app.appendChild(card);
     });
 
-  const addBtn = document.createElement("button");
-  addBtn.className = "add-btn";
-  addBtn.innerText = "+ Add Habit";
-  addBtn.onclick = addHabit;
-
-  app.appendChild(addBtn);
+  const add = document.createElement("button");
+  add.className = "add-btn";
+  add.innerText = "+ Add Habit";
+  add.onclick = addHabit;
+  app.appendChild(add);
 }
 
-/* ---------- REORDER ---------- */
-
-function reorder(e, targetId) {
-  const draggedId = e.dataTransfer.getData("id");
-  if (draggedId === targetId) return;
-
-  const dragged = habits.find(h => h.id === draggedId);
-  const target = habits.find(h => h.id === targetId);
-
-  const temp = dragged.order;
-  dragged.order = target.order;
-  target.order = temp;
-
-  save();
-  render();
-}
-
-/* ---------- WEEK ---------- */
+/* ---------- WEEK (MATRIX) ---------- */
 
 function renderWeek(app) {
   const start = new Date(today);
@@ -171,7 +149,7 @@ function renderWeek(app) {
   grid.innerHTML =
     "<div></div>" +
     ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-      .map(d => `<div>${d}</div>`).join("");
+      .map(d => `<div class="cell">${d}</div>`).join("");
 
   habits.filter(h => !h.archived).forEach(h => {
     grid.innerHTML += `<div>${h.name}</div>`;
@@ -186,14 +164,14 @@ function renderWeek(app) {
   app.appendChild(grid);
 }
 
-/* ---------- MONTH ---------- */
+/* ---------- MONTH (CALENDAR) ---------- */
 
 function renderMonth(app) {
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const y = today.getFullYear();
+  const m = today.getMonth();
 
-  const firstDay = new Date(year, month, 1).getDay();
-  const days = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
 
   const cal = document.createElement("div");
   cal.className = "calendar";
@@ -203,13 +181,14 @@ function renderMonth(app) {
   }
 
   for (let d = 1; d <= days; d++) {
-    const key = new Date(year, month, d).toISOString().slice(0,10);
-    const done = habits.filter(h => h.history[key] && !h.archived).length;
-    const pct = habits.length ? done / habits.filter(h => !h.archived).length : 0;
+    const key = new Date(y, m, d).toISOString().slice(0,10);
+    const active = habits.filter(h => !h.archived);
+    const done = active.filter(h => h.history[key]).length;
+    const pct = active.length ? (done / active.length) * 100 : 0;
 
     const cell = document.createElement("div");
     cell.className = "day";
-    cell.style.background = barColor(pct * 100);
+    cell.style.background = barColor(pct);
     cell.innerText = d;
 
     cal.appendChild(cell);
