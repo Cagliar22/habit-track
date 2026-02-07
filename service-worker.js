@@ -1,7 +1,15 @@
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open("habits").then(cache =>
-      cache.addAll(["./", "./index.html", "./style.css", "./app.js"])
-    )
+const CACHE_NAME = "habits-v1";
+const FILES_TO_CACHE = ["./index.html", "./style.css", "./app.js", "./icon.png"];
+
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
+      .catch(err => console.error("Cache failed:", err))
+  );
+});
+
+self.addEventListener("fetch", event => {
+  event.respondWith(
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
