@@ -47,8 +47,7 @@ nav button {
   cursor: pointer;
 }
 
-/* ---------- HABITS ---------- */
-
+/* HABITS */
 .habit {
   background: var(--card);
   border-radius: 14px;
@@ -56,10 +55,7 @@ nav button {
   margin-bottom: 12px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.habit.done {
-  border-left: 6px solid var(--green);
+  touch-action: pan-y;
 }
 
 .habit-name {
@@ -90,8 +86,7 @@ nav button {
   cursor: pointer;
 }
 
-/* ---------- PROGRESS ---------- */
-
+/* PROGRESS */
 .progress {
   height: 6px;
   background: #333;
@@ -106,8 +101,7 @@ nav button {
   transition: width 0.3s ease, background 0.3s ease;
 }
 
-/* ---------- ADD ---------- */
-
+/* ADD BUTTON */
 .add-btn {
   margin-top: 12px;
   padding: 12px;
@@ -119,8 +113,7 @@ nav button {
   cursor: pointer;
 }
 
-/* ---------- WEEK MATRIX ---------- */
-
+/* WEEK GRID */
 .week-grid {
   display: grid;
   grid-template-columns: 120px repeat(7, 1fr);
@@ -145,8 +138,7 @@ nav button {
   background: var(--green);
 }
 
-/* ---------- MONTH CALENDAR ---------- */
-
+/* MONTH CALENDAR */
 .calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -167,3 +159,4 @@ nav button {
 .day:hover {
   transform: scale(1.05);
 }
+
