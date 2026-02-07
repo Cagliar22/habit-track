@@ -48,7 +48,6 @@ nav button {
 }
 
 /* ---------- HABITS ---------- */
-
 .habit {
   background: var(--card);
   border-radius: 14px;
@@ -100,7 +99,6 @@ nav button {
 }
 
 /* ---------- PROGRESS ---------- */
-
 .progress {
   height: 6px;
   background: #333;
@@ -116,7 +114,6 @@ nav button {
 }
 
 /* ---------- ADD ---------- */
-
 .add-btn {
   margin-top: 12px;
   padding: 12px;
@@ -129,7 +126,6 @@ nav button {
 }
 
 /* ---------- WEEK MATRIX ---------- */
-
 .week-grid {
   display: grid;
   grid-template-columns: 120px repeat(7, 1fr);
@@ -155,7 +151,6 @@ nav button {
 }
 
 /* ---------- MONTH CALENDAR ---------- */
-
 .calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
