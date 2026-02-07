@@ -27,10 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return "var(--red)";
   }
 
+  /* ---------- UUID FALLBACK ---------- */
+  function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   /* ---------- HABITS ---------- */
   function addHabit() {
     habits.push({
-      id: crypto.randomUUID(),
+      id: crypto.randomUUID ? crypto.randomUUID() : uuidv4(),
       name: "New Habit",
       history: {},
       archived: false,
@@ -147,8 +155,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------- FOCUS NEW HABIT ---------- */
   function focusNewHabit() {
-    const last = appEl.querySelector(".habit-name:last-of-type");
-    if (last) last.focus();
+    setTimeout(() => {
+      const last = appEl.querySelector(".habit-name:last-of-type");
+      if (last) last.focus();
+    }, 50);
   }
 
   /* ---------- TODAY ---------- */
@@ -182,21 +192,41 @@ document.addEventListener("DOMContentLoaded", () => {
         addSwipe(card, h);
         addDragHandlers(card, h);
 
-        card.innerHTML = `
-          <div class="habit-top">
-            <input
-              class="habit-name"
-              value="${h.name}"
-              onclick="event.stopPropagation()"
-              oninput="renameHabit('${h.id}', this.value)"
-            />
-            <div class="archive" onclick="event.stopPropagation(); archiveHabit('${h.id}')">archive</div>
-          </div>
-          <div class="streak">🔥 ${streak}</div>
-          <div class="progress">
-            <div class="progress-fill" style="width:${done ? 100 : 0}%; background:var(--green)"></div>
-          </div>
-        `;
+        const topDiv = document.createElement("div");
+        topDiv.className = "habit-top";
+
+        const input = document.createElement("input");
+        input.className = "habit-name";
+        input.value = h.name;
+        input.addEventListener("click", e => e.stopPropagation());
+        input.addEventListener("input", e => renameHabit(h.id, e.target.value));
+
+        const archiveBtn = document.createElement("div");
+        archiveBtn.className = "archive";
+        archiveBtn.innerText = "archive";
+        archiveBtn.addEventListener("click", e => { e.stopPropagation(); archiveHabit(h.id); });
+
+        topDiv.appendChild(input);
+        topDiv.appendChild(archiveBtn);
+
+        const streakDiv = document.createElement("div");
+        streakDiv.className = "streak";
+        streakDiv.innerText = `🔥 ${streak}`;
+
+        const progressDiv = document.createElement("div");
+        progressDiv.className = "progress";
+
+        const fillDiv = document.createElement("div");
+        fillDiv.className = "progress-fill";
+        fillDiv.style.width = done ? "100%" : "0%";
+        fillDiv.style.background = "var(--green)";
+
+        progressDiv.appendChild(fillDiv);
+
+        card.appendChild(topDiv);
+        card.appendChild(streakDiv);
+        card.appendChild(progressDiv);
+
         container.appendChild(card);
       });
 
@@ -262,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       cell.onclick = () => {
         alert(
-          `Habits for ${d}/${m+1}/${y}:\n` +
+          `Habits for ${d}/${m + 1}/${y}:\n` +
           active.map(h => `${h.name}: ${h.history[key] ? "✅" : "❌"}`).join("\n")
         );
       };
@@ -284,7 +314,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Expose globally for HTML buttons
   window.setView = setView;
-  window.renameHabit = renameHabit;
 
   render();
 });
