@@ -2,7 +2,7 @@
   --bg: #0f1115;
   --card: #1a1d24;
   --text: #e6e6e6;
-  --muted: #777;
+  --muted: #555;
   --green: #3ddc84;
 }
 
@@ -22,27 +22,26 @@ header {
   text-align: center;
 }
 
+main {
+  padding: 16px;
+  padding-bottom: 90px;
+}
+
 nav {
   display: flex;
-  justify-content: space-around;
-  background: var(--card);
   position: fixed;
   bottom: 0;
   width: 100%;
+  background: var(--card);
 }
 
 nav button {
   flex: 1;
   padding: 12px;
-  background: none;
   border: none;
+  background: none;
   color: var(--text);
   font-size: 16px;
-}
-
-main {
-  padding: 16px;
-  padding-bottom: 80px;
 }
 
 .habit {
@@ -50,9 +49,6 @@ main {
   border-radius: 12px;
   padding: 14px;
   margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .habit.done {
@@ -64,19 +60,71 @@ main {
   background: #333;
   border-radius: 6px;
   margin-top: 8px;
+  overflow: hidden;
+}
+
+.progress.overall {
+  margin-top: 12px;
 }
 
 .progress-fill {
   height: 100%;
   width: 0%;
   background: var(--green);
-  border-radius: 6px;
   transition: width 0.3s ease;
 }
 
 input {
+  width: 100%;
   background: none;
   border: none;
   color: var(--text);
   font-size: 16px;
+}
+
+.add-btn {
+  margin-top: 12px;
+  padding: 12px;
+  width: 100%;
+  background: var(--card);
+  color: var(--text);
+  border: 1px dashed var(--muted);
+  border-radius: 12px;
+}
+
+/* Weekly dots */
+.week-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  gap: 8px;
+  font-size: 12px;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin: auto;
+  background: #333;
+}
+
+.dot.done {
+  background: var(--green);
+}
+
+/* Monthly calendar */
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.day {
+  height: 44px;
+  border-radius: 6px;
+  background: #222;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
