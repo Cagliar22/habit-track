@@ -2,7 +2,11 @@ let view = "today";
 const today = new Date();
 const todayKey = today.toISOString().slice(0, 10);
 
-document.getElementById("date").innerText = today.toDateString();
+const dateEl = document.getElementById("date");
+const overallBar = document.getElementById("overallBar");
+const appEl = document.getElementById("app");
+
+dateEl.innerText = today.toDateString();
 
 let habits = JSON.parse(localStorage.getItem("habits")) || [];
 
@@ -157,16 +161,8 @@ function handleDragOver(container, e) {
 
 function renderToday(app) {
   const pct = overallCompletion();
-  const bar = document.getElementById("overallBar");
-const add = document.createElement("button");
-add.className = "add-btn";
-add.innerText = "+ Add Habit";
-add.onclick = addHabit;
-
-app.appendChild(add); // outside container for drag/drop
-
-  bar.style.width = pct + "%";
-  bar.style.background = barColor(pct);
+  overallBar.style.width = pct + "%";
+  overallBar.style.background = barColor(pct);
 
   const overall = document.createElement("div");
   overall.style.fontSize = "14px";
@@ -199,4 +195,105 @@ app.appendChild(add); // outside container for drag/drop
             class="habit-name"
             value="${h.name}"
             onclick="event.stopPropagation()"
-            oninput="renameHabit('${h.i
+            oninput="renameHabit('${h.id}', this.value)"
+          />
+          <div class="archive" onclick="event.stopPropagation(); archiveHabit('${h.id}')">archive</div>
+        </div>
+        <div class="streak">🔥 ${streak}</div>
+        <div class="progress">
+          <div class="progress-fill" style="width:${done ? 100 : 0}%; background:var(--green)"></div>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+
+  app.appendChild(container);
+
+  const add = document.createElement("button");
+  add.className = "add-btn";
+  add.innerText = "+ Add Habit";
+  add.onclick = addHabit;
+
+  app.appendChild(add);
+}
+
+/* ---------- WEEK ---------- */
+
+function renderWeek(app) {
+  const start = new Date(today);
+  start.setDate(today.getDate() - today.getDay() + 1);
+
+  const grid = document.createElement("div");
+  grid.className = "week-grid";
+
+  grid.innerHTML =
+    "<div></div>" +
+    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      .map(d => `<div class="cell">${d}</div>`)
+      .join("");
+
+  habits.filter(h => !h.archived).forEach(h => {
+    grid.innerHTML += `<div>${h.name}</div>`;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      grid.innerHTML += `<div class="dot ${h.history[key] ? "done" : ""}"></div>`;
+    }
+  });
+
+  app.appendChild(grid);
+}
+
+/* ---------- MONTH ---------- */
+
+function renderMonth(app) {
+  const y = today.getFullYear();
+  const m = today.getMonth();
+
+  const firstDay = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+
+  const cal = document.createElement("div");
+  cal.className = "calendar";
+
+  for (let i = 0; i < (firstDay + 6) % 7; i++) {
+    cal.appendChild(document.createElement("div"));
+  }
+
+  for (let d = 1; d <= days; d++) {
+    const key = new Date(y, m, d).toISOString().slice(0, 10);
+    const active = habits.filter(h => !h.archived);
+    const done = active.filter(h => h.history[key]).length;
+    const pct = active.length ? (done / active.length) * 100 : 0;
+
+    const cell = document.createElement("div");
+    cell.className = "day";
+    cell.style.background = barColor(pct);
+    cell.innerText = d;
+
+    cell.onclick = () => {
+      alert(
+        `Habits for ${d}/${m+1}/${y}:\n` +
+        active.map(h => `${h.name}: ${h.history[key] ? "✅" : "❌"}`).join("\n")
+      );
+    };
+
+    cal.appendChild(cell);
+  }
+
+  app.appendChild(cal);
+}
+
+/* ---------- MAIN ---------- */
+
+function render() {
+  appEl.innerHTML = "";
+
+  if (view === "today") renderToday(appEl);
+  if (view === "week") renderWeek(appEl);
+  if (view === "month") renderMonth(appEl);
+}
+
+render();
