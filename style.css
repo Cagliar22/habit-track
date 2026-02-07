@@ -50,19 +50,19 @@ nav button {
 
 .habit {
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 14px;
   margin-bottom: 12px;
+  transition: transform 0.2s ease;
 }
 
 .habit.done {
   border-left: 6px solid var(--green);
 }
 
-.habit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.habit-name {
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .streak {
@@ -70,8 +70,84 @@ nav button {
   color: var(--muted);
 }
 
+.habit-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.archive {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- PROGRESS ---------- */
+
 .progress {
   height: 6px;
   background: #333;
   border-radius: 6px;
-  m
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* ---------- ADD ---------- */
+
+.add-btn {
+  margin-top: 12px;
+  padding: 12px;
+  width: 100%;
+  background: var(--card);
+  color: var(--text);
+  border: 1px dashed var(--muted);
+  border-radius: 12px;
+}
+
+/* ---------- WEEK MATRIX ---------- */
+
+.week-grid {
+  display: grid;
+  grid-template-columns: 120px repeat(7, 1fr);
+  gap: 8px;
+  font-size: 12px;
+  align-items: center;
+}
+
+.cell {
+  text-align: center;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #333;
+  margin: auto;
+}
+
+.dot.done {
+  background: var(--green);
+}
+
+/* ---------- MONTH CALENDAR ---------- */
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.day {
+  height: 44px;
+  border-radius: 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
