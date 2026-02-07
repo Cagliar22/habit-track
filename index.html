@@ -8,18 +8,24 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1 id="date"></h1>
-  </header>
 
-  <main id="app"></main>
+<header>
+  <h1 id="date"></h1>
 
-  <nav>
-    <button onclick="setView('today')">Today</button>
-    <button onclick="setView('week')">Week</button>
-    <button onclick="setView('month')">Month</button>
-  </nav>
+  <!-- Daily completion bar -->
+  <div class="progress overall">
+    <div id="overallBar" class="progress-fill"></div>
+  </div>
+</header>
 
-  <script src="app.js"></script>
+<main id="app"></main>
+
+<nav>
+  <button onclick="setView('today')">Today</button>
+  <button onclick="setView('week')">Week</button>
+  <button onclick="setView('month')">Month</button>
+</nav>
+
+<script src="app.js"></script>
 </body>
 </html>
