@@ -1,19 +1,27 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const appEl = document.getElementById("app");
+  const dateEl = document.getElementById("date");
+  const overallBar = document.getElementById("overallBar");
+
+  if (!appEl || !dateEl || !overallBar) {
+    console.error("Missing essential elements (#app, #date, or #overallBar)");
+    return;
+  }
+
   let view = "today";
   const today = new Date();
   const todayKey = today.toISOString().slice(0, 10);
-
-  const dateEl = document.getElementById("date");
-  const overallBar = document.getElementById("overallBar");
-  const appEl = document.getElementById("app");
-
   dateEl.innerText = today.toDateString();
 
   let habits = JSON.parse(localStorage.getItem("habits")) || [];
 
-  /* ---------- UTILS ---------- */
+  // ---------- UTILS ----------
   function save() {
     localStorage.setItem("habits", JSON.stringify(habits));
+  }
+
+  function generateId() {
+    return crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 12);
   }
 
   function setView(v) {
@@ -27,18 +35,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return "var(--red)";
   }
 
-  /* ---------- UUID FALLBACK ---------- */
-  function uuidv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-
-  /* ---------- HABITS ---------- */
+  // ---------- HABITS ----------
   function addHabit() {
     habits.push({
-      id: crypto.randomUUID ? crypto.randomUUID() : uuidv4(),
+      id: generateId(),
       name: "New Habit",
       history: {},
       archived: false,
@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function toggleHabit(id) {
     const h = habits.find(h => h.id === id);
+    if (!h) return;
     h.history[todayKey] = !h.history[todayKey];
     save();
     render();
@@ -58,12 +59,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renameHabit(id, value) {
     const h = habits.find(h => h.id === id);
+    if (!h) return;
     h.name = value;
     save();
   }
 
   function archiveHabit(id) {
-    habits.find(h => h.id === id).archived = true;
+    const h = habits.find(h => h.id === id);
+    if (!h) return;
+    h.archived = true;
     save();
     render();
   }
@@ -75,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
-  /* ---------- STREAK ---------- */
+  // ---------- STREAK ----------
   function getStreak(h) {
     let streak = 0;
     let d = new Date(today);
@@ -96,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return streak;
   }
 
-  /* ---------- COMPLETION ---------- */
+  // ---------- COMPLETION ----------
   function overallCompletion() {
     const active = habits.filter(h => !h.archived);
     if (!active.length) return 0;
@@ -104,12 +108,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return Math.round((done / active.length) * 100);
   }
 
-  /* ---------- SWIPE ---------- */
+  // ---------- SWIPE ----------
   function addSwipe(el, habit) {
     let startX = 0;
-    el.addEventListener("touchstart", e => {
-      startX = e.touches[0].clientX;
-    });
+    el.addEventListener("touchstart", e => startX = e.touches[0].clientX);
     el.addEventListener("touchend", e => {
       const diff = e.changedTouches[0].clientX - startX;
       if (diff > 80) toggleHabit(habit.id);
@@ -117,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ---------- DRAG & DROP ---------- */
+  // ---------- DRAG & DROP ----------
   function addDragHandlers(el, habit) {
     el.setAttribute("draggable", true);
     el.addEventListener("dragstart", e => {
@@ -135,6 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function handleDragOver(container, e) {
     e.preventDefault();
     const draggingEl = container.querySelector(".dragging");
+    if (!draggingEl) return;
     const siblings = [...container.querySelectorAll(".habit:not(.dragging)")];
     const afterElement = siblings.reduce((closest, child) => {
       const box = child.getBoundingClientRect();
@@ -146,22 +149,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (afterElement) container.insertBefore(draggingEl, afterElement);
     else container.appendChild(draggingEl);
 
-    // update order
     [...container.querySelectorAll(".habit")].forEach((h, i) => {
-      const id = h.dataset.id;
-      habits.find(hb => hb.id === id).order = i;
+      const habit = habits.find(hb => hb.id === h.dataset.id);
+      if (habit) habit.order = i;
     });
   }
 
-  /* ---------- FOCUS NEW HABIT ---------- */
+  // ---------- FOCUS ----------
   function focusNewHabit() {
-    setTimeout(() => {
-      const last = appEl.querySelector(".habit-name:last-of-type");
-      if (last) last.focus();
-    }, 50);
+    const last = appEl.querySelector(".habit-name:last-of-type");
+    if (last) last.focus();
   }
 
-  /* ---------- TODAY ---------- */
+  // ---------- RENDER TODAY ----------
   function renderToday(app) {
     const pct = overallCompletion();
     overallBar.style.width = pct + "%";
@@ -177,23 +177,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.createElement("div");
     container.addEventListener("dragover", e => handleDragOver(container, e));
 
-    habits
-      .filter(h => !h.archived)
-      .sort((a, b) => a.order - b.order)
+    habits.filter(h => !h.archived).sort((a, b) => a.order - b.order)
       .forEach(h => {
-        const done = h.history[todayKey];
-        const streak = getStreak(h);
-
         const card = document.createElement("div");
-        card.className = "habit" + (done ? " done" : "");
+        card.className = "habit" + (h.history[todayKey] ? " done" : "");
         card.dataset.id = h.id;
         card.onclick = () => toggleHabit(h.id);
 
         addSwipe(card, h);
         addDragHandlers(card, h);
 
-        const topDiv = document.createElement("div");
-        topDiv.className = "habit-top";
+        // Habit top
+        const habitTop = document.createElement("div");
+        habitTop.className = "habit-top";
 
         const input = document.createElement("input");
         input.className = "habit-name";
@@ -204,26 +200,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const archiveBtn = document.createElement("div");
         archiveBtn.className = "archive";
         archiveBtn.innerText = "archive";
-        archiveBtn.addEventListener("click", e => { e.stopPropagation(); archiveHabit(h.id); });
+        archiveBtn.addEventListener("click", e => {
+          e.stopPropagation();
+          archiveHabit(h.id);
+        });
 
-        topDiv.appendChild(input);
-        topDiv.appendChild(archiveBtn);
+        habitTop.appendChild(input);
+        habitTop.appendChild(archiveBtn);
 
         const streakDiv = document.createElement("div");
         streakDiv.className = "streak";
-        streakDiv.innerText = `🔥 ${streak}`;
+        streakDiv.innerText = `🔥 ${getStreak(h)}`;
 
         const progressDiv = document.createElement("div");
         progressDiv.className = "progress";
+        const fill = document.createElement("div");
+        fill.className = "progress-fill";
+        fill.style.width = h.history[todayKey] ? "100%" : "0%";
+        fill.style.background = "var(--green)";
+        progressDiv.appendChild(fill);
 
-        const fillDiv = document.createElement("div");
-        fillDiv.className = "progress-fill";
-        fillDiv.style.width = done ? "100%" : "0%";
-        fillDiv.style.background = "var(--green)";
-
-        progressDiv.appendChild(fillDiv);
-
-        card.appendChild(topDiv);
+        card.appendChild(habitTop);
         card.appendChild(streakDiv);
         card.appendChild(progressDiv);
 
@@ -236,64 +233,70 @@ document.addEventListener("DOMContentLoaded", () => {
     add.className = "add-btn";
     add.innerText = "+ Add Habit";
     add.onclick = addHabit;
-
     app.appendChild(add);
   }
 
-  /* ---------- WEEK ---------- */
+  // ---------- RENDER WEEK ----------
   function renderWeek(app) {
     const start = new Date(today);
-    start.setDate(today.getDate() - today.getDay() + 1); // Monday start
+    start.setDate(today.getDate() - today.getDay() + 1);
 
     const grid = document.createElement("div");
     grid.className = "week-grid";
 
-    grid.innerHTML =
-      "<div></div>" +
-      ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        .map(d => `<div class="cell">${d}</div>`).join("");
+    grid.appendChild(document.createElement("div")); // top-left empty
+    ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d => {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.innerText = d;
+      grid.appendChild(cell);
+    });
 
     habits.filter(h => !h.archived).forEach(h => {
-      grid.innerHTML += `<div>${h.name}</div>`;
+      const nameDiv = document.createElement("div");
+      nameDiv.innerText = h.name;
+      grid.appendChild(nameDiv);
+
       for (let i = 0; i < 7; i++) {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
-        const key = d.toISOString().slice(0, 10);
-        grid.innerHTML += `<div class="dot ${h.history[key] ? "done" : ""}"></div>`;
+        const key = d.toISOString().slice(0,10);
+        const dot = document.createElement("div");
+        dot.className = "dot" + (h.history[key] ? " done" : "");
+        grid.appendChild(dot);
       }
     });
 
     app.appendChild(grid);
   }
 
-  /* ---------- MONTH ---------- */
+  // ---------- RENDER MONTH ----------
   function renderMonth(app) {
     const y = today.getFullYear();
     const m = today.getMonth();
-
-    const firstDay = new Date(y, m, 1).getDay();
-    const days = new Date(y, m + 1, 0).getDate();
+    const firstDay = new Date(y,m,1).getDay();
+    const days = new Date(y,m+1,0).getDate();
 
     const cal = document.createElement("div");
     cal.className = "calendar";
 
-    for (let i = 0; i < (firstDay + 6) % 7; i++) cal.appendChild(document.createElement("div"));
+    for (let i=0; i<(firstDay+6)%7; i++) cal.appendChild(document.createElement("div"));
 
-    for (let d = 1; d <= days; d++) {
-      const key = new Date(y, m, d).toISOString().slice(0, 10);
-      const active = habits.filter(h => !h.archived);
-      const done = active.filter(h => h.history[key]).length;
-      const pct = active.length ? (done / active.length) * 100 : 0;
+    for (let d=1; d<=days; d++) {
+      const key = new Date(y,m,d).toISOString().slice(0,10);
+      const active = habits.filter(h=>!h.archived);
+      const done = active.filter(h=>h.history[key]).length;
+      const pct = active.length ? (done/active.length)*100 : 0;
 
       const cell = document.createElement("div");
       cell.className = "day";
       cell.style.background = barColor(pct);
       cell.innerText = d;
 
-      cell.onclick = () => {
+      cell.onclick = ()=> {
         alert(
-          `Habits for ${d}/${m + 1}/${y}:\n` +
-          active.map(h => `${h.name}: ${h.history[key] ? "✅" : "❌"}`).join("\n")
+          `Habits for ${d}/${m+1}/${y}:\n` +
+          active.map(h=>`${h.name}: ${h.history[key]?"✅":"❌"}`).join("\n")
         );
       };
 
@@ -303,17 +306,17 @@ document.addEventListener("DOMContentLoaded", () => {
     app.appendChild(cal);
   }
 
-  /* ---------- MAIN ---------- */
+  // ---------- MAIN RENDER ----------
   function render() {
     appEl.innerHTML = "";
-
     if (view === "today") renderToday(appEl);
-    if (view === "week") renderWeek(appEl);
-    if (view === "month") renderMonth(appEl);
+    else if (view === "week") renderWeek(appEl);
+    else if (view === "month") renderMonth(appEl);
   }
 
-  // Expose globally for HTML buttons
+  // Expose globally
   window.setView = setView;
+  window.renameHabit = renameHabit;
 
   render();
 });
