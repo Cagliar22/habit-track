@@ -1,6 +1,7 @@
 let view = "today";
+
 const today = new Date();
-const todayKey = today.toISOString().slice(0,10);
+const todayKey = today.toISOString().slice(0, 10);
 
 document.getElementById("date").innerText = today.toDateString();
 
@@ -15,6 +16,8 @@ function setView(v) {
   render();
 }
 
+/* ---------- HABITS ---------- */
+
 function addHabit() {
   habits.push({
     id: crypto.randomUUID(),
@@ -26,50 +29,65 @@ function addHabit() {
 }
 
 function toggleHabit(id) {
-  const h = habits.find(h => h.id === id);
-  h.history[todayKey] = !h.history[todayKey];
+  const habit = habits.find(h => h.id === id);
+  habit.history[todayKey] = !habit.history[todayKey];
   save();
   render();
 }
 
-function renameHabit(id, name) {
-  habits.find(h => h.id === id).name = name;
+function renameHabit(id, value) {
+  const habit = habits.find(h => h.id === id);
+  habit.name = value;
   save();
 }
 
+/* ---------- COMPLETION ---------- */
+
 function overallCompletion() {
-  if (!habits.length) return 0;
-  let done = habits.filter(h => h.history[todayKey]).length;
+  if (habits.length === 0) return 0;
+  const done = habits.filter(h => h.history[todayKey]).length;
   return Math.round((done / habits.length) * 100);
 }
+
+/* ---------- RENDER TODAY ---------- */
 
 function renderToday(app) {
   const percent = overallCompletion();
   const bar = document.getElementById("overallBar");
+
   bar.style.width = percent + "%";
   bar.style.background = percent >= 75 ? "var(--green)" : "#777";
 
-  habits.forEach(h => {
-    const done = h.history[todayKey];
-    const div = document.createElement("div");
-    div.className = "habit" + (done ? " done" : "");
-    div.onclick = () => toggleHabit(h.id);
+  habits.forEach(habit => {
+    const done = habit.history[todayKey];
 
-    div.innerHTML = `
-      <input value="${h.name}" oninput="renameHabit('${h.id}', this.value)">
+    const card = document.createElement("div");
+    card.className = "habit" + (done ? " done" : "");
+    card.onclick = () => toggleHabit(habit.id);
+
+    card.innerHTML = `
+      <input
+        value="${habit.name}"
+        onclick="event.stopPropagation()"
+        oninput="renameHabit('${habit.id}', this.value)"
+      >
       <div class="progress">
         <div class="progress-fill" style="width:${done ? 100 : 0}%"></div>
       </div>
     `;
-    app.appendChild(div);
+
+    app.appendChild(card);
   });
 
-  const add = document.createElement("button");
-  add.className = "add-btn";
-  add.innerText = "+ Add Habit";
-  add.onclick = addHabit;
-  app.appendChild(add);
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-btn";
+  addBtn.innerText = "+ Add Habit";
+  addBtn.onclick = addHabit;
+
+  app.appendChild(addBtn);
 }
+
+/* ---------- RENDER WEEK ---------- */
 
 function renderWeek(app) {
   const start = new Date(today);
@@ -78,46 +96,63 @@ function renderWeek(app) {
   const grid = document.createElement("div");
   grid.className = "week-grid";
 
-  grid.innerHTML = "<div></div>" + ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-    .map(d => `<div>${d}</div>`).join("");
+  grid.innerHTML =
+    "<div></div>" +
+    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      .map(d => `<div>${d}</div>`)
+      .join("");
 
-  habits.forEach(h => {
-    grid.innerHTML += `<div>${h.name}</div>`;
+  habits.forEach(habit => {
+    grid.innerHTML += `<div>${habit.name}</div>`;
+
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      const key = d.toISOString().slice(0,10);
-      const dot = `<div class="dot ${h.history[key] ? "done" : ""}"></div>`;
-      grid.innerHTML += dot;
+      const key = d.toISOString().slice(0, 10);
+
+      grid.innerHTML += `
+        <div class="dot ${habit.history[key] ? "done" : ""}"></div>
+      `;
     }
   });
 
   app.appendChild(grid);
 }
 
+/* ---------- RENDER MONTH ---------- */
+
 function renderMonth(app) {
-  const first = new Date(today.getFullYear(), today.getMonth(), 1);
-  const days = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+  const year = today.getFullYear();
+  const month = today.getMonth();
 
-  const cal = document.createElement("div");
-  cal.className = "calendar";
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  for (let i = 1; i <= days; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth(), i);
-    const key = d.toISOString().slice(0,10);
+  const calendar = document.createElement("div");
+  calendar.className = "calendar";
 
-    let done = habits.filter(h => h.history[key]).length;
-    let pct = habits.length ? done / habits.length : 0;
+  // Empty cells before month starts
+  for (let i = 0; i < (firstDay + 6) % 7; i++) {
+    calendar.appendChild(document.createElement("div"));
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateKey = new Date(year, month, day).toISOString().slice(0, 10);
+    const completed = habits.filter(h => h.history[dateKey]).length;
+    const pct = habits.length ? completed / habits.length : 0;
 
     const cell = document.createElement("div");
     cell.className = "day";
-    cell.style.background = pct >= 0.75 ? "#3ddc84" : "#222";
-    cell.innerText = i;
-    cal.appendChild(cell);
+    cell.style.background = pct >= 0.75 ? "var(--green)" : "#222";
+    cell.innerText = day;
+
+    calendar.appendChild(cell);
   }
 
-  app.appendChild(cal);
+  app.appendChild(calendar);
 }
+
+/* ---------- MAIN RENDER ---------- */
 
 function render() {
   const app = document.getElementById("app");
@@ -129,6 +164,8 @@ function render() {
 }
 
 render();
+
+/* ---------- PWA ---------- */
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
